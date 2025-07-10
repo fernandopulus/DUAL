@@ -1,38 +1,46 @@
-
+// services/firestoreEvaluationStorage.ts
 import { SavedEvaluation } from '../types';
+import { 
+  saveEvaluation as firestoreSaveEvaluation, 
+  getAllEvaluations as firestoreGetAllEvaluations,
+  deleteEvaluation as firestoreDeleteEvaluation
+} from './firestoreService';
 
-const EVALUATIONS_STORAGE_KEY = 'dualPresentationEvaluations';
-
-export function saveEvaluation(evaluation: SavedEvaluation): void {
+// Guarda una evaluación en Firestore
+export async function saveEvaluation(evaluation: SavedEvaluation): Promise<string> {
   try {
-    const existingEvaluations = getAllEvaluations();
-    existingEvaluations.push(evaluation);
-    localStorage.setItem(EVALUATIONS_STORAGE_KEY, JSON.stringify(existingEvaluations));
+    // Ajusta los campos si SavedEvaluation difiere de lo que espera firestoreSaveEvaluation
+    const { studentName, scores, feedbackText = '', evaluatorName = '' } = evaluation;
+    const id = await firestoreSaveEvaluation(studentName, scores, feedbackText, evaluatorName);
+    return id;
   } catch (error) {
-    console.error("Error saving evaluation to localStorage:", error);
-    // Optionally, notify the user or handle the error more gracefully
+    console.error("Error saving evaluation to Firestore:", error);
+    throw error;
   }
 }
 
-export function getAllEvaluations(): SavedEvaluation[] {
+// Obtiene todas las evaluaciones desde Firestore
+export async function getAllEvaluations(): Promise<SavedEvaluation[]> {
   try {
-    const storedEvaluations = localStorage.getItem(EVALUATIONS_STORAGE_KEY);
-    if (storedEvaluations) {
-      const parsed = JSON.parse(storedEvaluations);
-      // Basic validation to ensure it's an array
-      return Array.isArray(parsed) ? parsed : [];
-    }
+    const evaluations = await firestoreGetAllEvaluations();
+    return evaluations as SavedEvaluation[]; // Ajusta el cast si tus tipos son distintos
+  } catch (error) {
+    console.error("Error retrieving evaluations from Firestore:", error);
     return [];
-  } catch (error) {
-    console.error("Error retrieving evaluations from localStorage:", error);
-    return []; // Return empty array on error to prevent app crash
   }
 }
 
-export function clearAllEvaluations(): void {
+// Borra todas las evaluaciones desde Firestore (¡esto borra uno por uno!)
+export async function clearAllEvaluations(): Promise<void> {
   try {
-    localStorage.removeItem(EVALUATIONS_STORAGE_KEY);
+    const evaluations = await firestoreGetAllEvaluations();
+    for (const evaluation of evaluations) {
+      if (evaluation.id) {
+        await firestoreDeleteEvaluation(evaluation.id);
+      }
+    }
+    console.log("Todas las evaluaciones han sido eliminadas de Firestore.");
   } catch (error) {
-    console.error("Error clearing evaluations from localStorage:", error);
+    console.error("Error clearing evaluations from Firestore:", error);
   }
 }

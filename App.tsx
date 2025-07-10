@@ -8,7 +8,11 @@ import { RUBRIC_DATA, GRADING_CONSTANTS } from './constants';
 import { calculateTotalScore, calculateFinalGrade, areAllIndicatorsScored } from './services/gradingService';
 import { generateAIFeedback } from './services/geminiService';
 import { downloadReportAsPDF } from './services/pdfService';
-import { saveEvaluation as saveEvaluationToStorage, getAllEvaluations, clearAllEvaluations } from './services/storageService';
+import { 
+  saveEvaluation as saveEvaluationToFirestore, 
+  getAllEvaluations as getAllEvaluationsFromFirestore, 
+  clearAllEvaluations as clearAllEvaluationsFromFirestore 
+} from './services/firestoreService';
 
 import CalculateIcon from './components/icons/CalculateIcon';
 import SparklesIcon from './components/icons/SparklesIcon';
@@ -16,7 +20,6 @@ import DownloadIcon from './components/icons/DownloadIcon';
 import SaveIcon from './components/icons/SaveIcon';
 import DashboardIcon from './components/icons/DashboardIcon';
 import ArrowLeftIcon from './components/icons/ArrowLeftIcon';
-
 
 type ViewMode = 'form' | 'dashboard';
 
@@ -35,12 +38,20 @@ export const App = () => {
 
   const [currentView, setCurrentView] = useState<ViewMode>('form');
   const [savedEvaluations, setSavedEvaluations] = useState<SavedEvaluation[]>([]);
+  const [isLoadingEvaluations, setIsLoadingEvaluations] = useState<boolean>(true);
+
+  // Cargar evaluaciones desde Firestore al iniciar o al limpiar/agregar
+  const refreshEvaluations = useCallback(() => {
+    setIsLoadingEvaluations(true);
+    getAllEvaluationsFromFirestore()
+      .then(setSavedEvaluations)
+      .finally(() => setIsLoadingEvaluations(false));
+  }, []);
 
   useEffect(() => {
-    // Load saved evaluations on initial mount
-    setSavedEvaluations(getAllEvaluations());
-  }, []);
-  
+    refreshEvaluations();
+  }, [refreshEvaluations]);
+
   const resetFormState = () => {
     setStudentName('');
     setCourse('');
@@ -52,8 +63,7 @@ export const App = () => {
     setIsSubmitted(false);
     setErrorMessage(null);
     setSuccessMessage(null);
- };
-
+  };
 
   const handleScoreChange = useCallback((indicatorId: string, score: ScorePoints) => {
     setScores(prevScores => ({ ...prevScores, [indicatorId]: score }));
@@ -143,7 +153,7 @@ export const App = () => {
       if (!feedbackText.startsWith("Error:")) {
         displaySuccessMessage("Retroalimentación generada exitosamente.");
       } else {
-        setErrorMessage(feedbackText); // Show AI error as main error
+        setErrorMessage(feedbackText);
       }
     } catch (error) {
       console.error("Error in handleGenerateFeedback:", error);
@@ -154,36 +164,32 @@ export const App = () => {
     }
   }, [studentName, scores, finalGrade, course]);
 
-  const handleSaveEvaluation = useCallback(() => {
-    if (!validateForm(true) || finalGrade === null || !aiFeedback) { // validateForm(true) checks for grade and feedback
+  const handleSaveEvaluation = useCallback(async () => {
+    if (!validateForm(true) || finalGrade === null || !aiFeedback) {
       setErrorMessage("Complete la evaluación, calcule nota y genere retroalimentación antes de guardar.");
       return;
     }
-    const newEvaluation: SavedEvaluation = {
-      id: Date.now().toString(),
-      studentName,
-      course,
-      evaluationDate: new Date().toLocaleDateString('es-CL'),
-      scores,
-      totalScore,
-      finalGrade,
-      aiFeedback,
-      groundingMetadata,
-    };
-    saveEvaluationToStorage(newEvaluation);
-    setSavedEvaluations(getAllEvaluations()); // Update dashboard data
-    displaySuccessMessage(`Evaluación para ${studentName} guardada.`);
-    // Optionally, reset the form after saving
-    // resetFormState(); 
-  }, [studentName, course, scores, totalScore, finalGrade, aiFeedback, groundingMetadata]);
-
+    try {
+      await saveEvaluationToFirestore(
+        studentName,
+        scores,
+        aiFeedback,
+        "" // puedes pasar evaluatorName aquí si lo tienes
+      );
+      displaySuccessMessage(`Evaluación para ${studentName} guardada.`);
+      refreshEvaluations(); // Recarga evaluaciones desde Firestore
+      // Optionally, reset the form after saving:
+      // resetFormState();
+    } catch (err) {
+      setErrorMessage("Error al guardar la evaluación.");
+    }
+  }, [studentName, scores, aiFeedback, finalGrade, refreshEvaluations]);
 
   const handleDownloadReport = useCallback(async () => {
     if (!validateForm(true) || finalGrade === null || !aiFeedback) {
       setErrorMessage("Complete la evaluación, calcule nota y genere retroalimentación antes de descargar.");
       return;
     }
-    
     const evaluationDate = new Date().toLocaleDateString('es-CL');
     try {
       await downloadReportAsPDF({
@@ -203,10 +209,14 @@ export const App = () => {
         setErrorMessage("Error al descargar el informe PDF.");
     }
   }, [studentName, course, scores, totalScore, finalGrade, aiFeedback, groundingMetadata]);
-  
+
   useEffect(() => {
     if (studentName.trim() && course && areAllIndicatorsScored(scores, RUBRIC_DATA.length)) {
-      if (errorMessage === 'El nombre del estudiante es requerido.' || errorMessage === 'El curso del estudiante es requerido.' || errorMessage === 'Todos los indicadores deben ser evaluados para continuar.') {
+      if (
+        errorMessage === 'El nombre del estudiante es requerido.' ||
+        errorMessage === 'El curso del estudiante es requerido.' ||
+        errorMessage === 'Todos los indicadores deben ser evaluados para continuar.'
+      ) {
         setErrorMessage(null);
       }
     }
@@ -217,20 +227,21 @@ export const App = () => {
 
   const toggleView = () => {
     setCurrentView(prev => prev === 'form' ? 'dashboard' : 'form');
-    setErrorMessage(null); // Clear messages when switching views
+    setErrorMessage(null);
     setSuccessMessage(null);
   };
-  
+
   const handleResetAndNew = () => {
     resetFormState();
-    setCurrentView('form'); // Ensure we are on the form view
+    setCurrentView('form');
     displaySuccessMessage("Formulario reiniciado para una nueva evaluación.");
   };
 
-  const handleClearAllEvaluations = () => {
-      clearAllEvaluations();
-      setSavedEvaluations([]);
-      displaySuccessMessage("Todas las evaluaciones han sido borradas.");
+  const handleClearAllEvaluations = async () => {
+    await clearAllEvaluationsFromFirestore();
+    setSavedEvaluations([]);
+    displaySuccessMessage("Todas las evaluaciones han sido borradas.");
+    refreshEvaluations();
   };
 
   return (
@@ -341,7 +352,12 @@ export const App = () => {
             </div>
           </>
         ) : (
-          <DashboardView evaluations={savedEvaluations} onBackToForm={toggleView} onClearAll={handleClearAllEvaluations} />
+          <DashboardView
+            evaluations={savedEvaluations}
+            onBackToForm={toggleView}
+            onClearAll={handleClearAllEvaluations}
+            isLoading={isLoadingEvaluations}
+          />
         )}
       </main>
       <footer className="text-center mt-12 py-6 border-t border-slate-300">
