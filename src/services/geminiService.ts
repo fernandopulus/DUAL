@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { StudentEvaluation, RubricItem, ScorePoints, GroundingMetadata } from '../types';
+import { StudentEvaluation, RubricItem, ScorePoints, GroundingMetadata } from '../../types';
 import { RUBRIC_DATA } from '../constants';
 
 const API_KEY = import.meta.env.VITE_API_KEY;

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { SavedEvaluation } from '../types';
-import { GRADING_CONSTANTS } from '../constants';
+import { GRADING_CONSTANTS } from '../src/constants';
 
 interface GradeChartProps {
   evaluations: SavedEvaluation[];

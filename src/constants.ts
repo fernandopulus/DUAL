@@ -1,5 +1,5 @@
 
-import { RubricItem } from './types';
+import { RubricItem } from '../types';
 
 export const RUBRIC_DATA: RubricItem[] = [
   {

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { GRADING_CONSTANTS } from '../constants';
+import { GRADING_CONSTANTS } from '../src/constants';
 
 interface ScoreDisplayProps {
   totalScore: number;

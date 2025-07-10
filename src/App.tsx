@@ -1,3 +1,4 @@
+/// <reference lib="dom" />
 import React, { useState, useCallback, useEffect } from 'react';
 import { EvaluationForm } from './components/EvaluationForm';
 import { ScoreDisplay } from './components/ScoreDisplay';

@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { SavedEvaluation } from '../types';
-import { RUBRIC_DATA, GRADING_CONSTANTS, COURSE_OPTIONS } from '../constants';
+import { RUBRIC_DATA, GRADING_CONSTANTS, COURSE_OPTIONS } from '../src/constants';
 import ArrowLeftIcon from './icons/ArrowLeftIcon';
 import TrashIcon from './icons/TrashIcon';
 import { GradeChart } from './GradeChart';

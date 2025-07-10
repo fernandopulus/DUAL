@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { RUBRIC_DATA, COURSE_OPTIONS } from '../constants';
+import { RUBRIC_DATA, COURSE_OPTIONS } from '../src/constants';
 import { StudentEvaluation, ScorePoints } from '../types';
 import { IndicatorItem } from './IndicatorItem';
 

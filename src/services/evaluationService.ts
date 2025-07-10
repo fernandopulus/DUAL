@@ -1,7 +1,7 @@
 // src/services/evaluationService.ts
 import { collection, addDoc, getDocs, deleteDoc, doc, Timestamp } from "firebase/firestore";
-import { db } from "../src/firebase";
-import { SavedEvaluation } from "../types";
+import { db } from "../firebase";
+import { SavedEvaluation } from "../../types";
 
 const COLLECTION_NAME = "evaluations";
 

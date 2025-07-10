@@ -1,5 +1,5 @@
 
-import { StudentEvaluation } from '../types'; // ScorePoints removed as it's not directly used here
+import { StudentEvaluation } from '../../types'; // ScorePoints removed as it's not directly used here
 import { GRADING_CONSTANTS } from '../constants';
 
 export function calculateTotalScore(scores: StudentEvaluation): number {
