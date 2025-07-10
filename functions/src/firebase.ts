@@ -1,7 +1,7 @@
 // src/firebase.ts
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import {initializeApp} from "firebase/app";
+import {getAuth} from "firebase/auth";
+import {getFirestore} from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_API_KEY,
@@ -9,7 +9,7 @@ const firebaseConfig = {
   projectId: "asistencia-23f59",
   storageBucket: "asistencia-23f59.appspot.com",
   messagingSenderId: "515790247853",
-  appId: "1:515790247853:web:d430ff9c9d904dbc1b3324"
+  appId: "1:515790247853:web:d430ff9c9d904dbc1b3324",
 };
 
 const app = initializeApp(firebaseConfig);
