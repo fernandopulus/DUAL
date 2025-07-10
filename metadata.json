@@ -1,0 +1,6 @@
+{
+  "name": "Dual Presentation Evaluator",
+  "description": "A tool to evaluate student dual presentations using a rubric, calculate grades, and generate AI-powered feedback.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
