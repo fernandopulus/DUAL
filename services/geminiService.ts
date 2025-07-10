@@ -1,5 +1,4 @@
-
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { StudentEvaluation, RubricItem, ScorePoints, GroundingMetadata } from '../types';
 import { RUBRIC_DATA } from '../constants';
 
@@ -7,10 +6,11 @@ const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 if (!API_KEY) {
   console.error("API_KEY environment variable is not set.");
-  // Potentially throw an error or handle this state in the UI
+  console.error("Variables de entorno disponibles:", import.meta.env);
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY || "MISSING_API_KEY" }); // Fallback to prevent crash if key is missing during init
+// Inicializar correctamente la API de Gemini
+const genAI = new GoogleGenerativeAI(API_KEY || "");
 
 function getLevelNameForScore(rubricItem: RubricItem, score: ScorePoints): string {
     const level = rubricItem.levels.find(l => l.points === score);
@@ -55,7 +55,7 @@ Tu tarea es generar una retroalimentación constructiva, personalizada y profesi
 Basándote en la rúbrica y los puntajes detallados arriba, genera una retroalimentación en ESPAÑOL para el estudiante. La retroalimentación debe:
 1.  Comenzar con un saludo cordial y personalizado (ej: "Estimado/a ${studentName},").
 2.  Identificar claramente las Fortalezas Clave (2-3 indicadores con puntajes altos). Para cada fortaleza, explica brevemente qué hizo bien el estudiante, haciendo referencia a la descripción del nivel alcanzado en la rúbrica.
-3.  Identificar con tacto las Áreas de Oportunidad (2-3 indicadores con los puntajes más bajos). Para cada área, describe qué aspectos específicos necesitan desarrollo, basándote en la descripción del nivel alcanzado y los niveles superiores no alcanzados.
+3.  Identificar con tacto las Áreas de Oportunidad (2-3 indicadores con los puntajes más bajos). Para cada área, describe qué aspectos específicos necesitan desarrollo, basándose en la descripción del nivel alcanzado y los niveles superiores no alcanzados.
 4.  Proporcionar Recomendaciones Específicas y Accionables: Para cada área de oportunidad, ofrece 1-2 sugerencias concretas y prácticas que el estudiante puede implementar para mejorar.
 5.  Incluir un Reconocimiento General de su esfuerzo y participación.
 6.  Ofrecer Sugerencias Generales para Futuras Presentaciones (1-2 consejos).
@@ -65,26 +65,27 @@ La retroalimentación debe ser un texto coherente y bien estructurado. Evita usa
 `;
 
   try {
-    // Correct way to structure contents for single-turn, non-chat generation
-    const response: GenerateContentResponse = await ai.models.generateContent({
-        model: "gemini-2.5-flash", 
-        contents: userPrompt, // Direct string for simple prompts, or an array of Content objects for more complex ones.
-                            // For a single user message, direct string is fine.
-                            // If you need roles, it would be [{ role: "user", parts: [{text: userPrompt}] }]
-        config: {
-          systemInstruction: systemInstruction,
-          temperature: 0.6, 
-          topP: 0.9,
-          topK: 40,
-          // Example of enabling Google Search if needed, though not explicitly requested for this feedback generation
-          // tools: [{googleSearch: {}}], 
-        }
+    // Obtener el modelo correcto
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      systemInstruction: systemInstruction
     });
-    
-    const feedbackText = response.text;
-    const groundingMeta = response.candidates?.[0]?.groundingMetadata as GroundingMetadata | undefined;
 
-    return { feedbackText, groundingMetadata: groundingMeta };
+    // Generar contenido usando la API correcta
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+      generationConfig: {
+        temperature: 0.6,
+        topP: 0.9,
+        topK: 40,
+        maxOutputTokens: 2048,
+      }
+    });
+
+    const response = await result.response;
+    const feedbackText = response.text();
+
+    return { feedbackText };
 
   } catch (error) {
     console.error("Error generating AI feedback:", error);
