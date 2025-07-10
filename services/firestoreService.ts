@@ -1,8 +1,5 @@
 // services/firestoreService.ts
-
-import { initializeApp } from 'firebase/app';
 import { 
-  getFirestore, 
   collection, 
   addDoc, 
   getDocs, 
@@ -14,20 +11,8 @@ import {
   where,
   Timestamp
 } from 'firebase/firestore';
+import { db } from './firebase'; // SOLO importa db, no inicialices aquí
 import { StudentEvaluation } from '../types';
-
-// Configuración de Firebase
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
-};
-
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
 
 // Tipos para las evaluaciones
 export interface EvaluationRecord {
