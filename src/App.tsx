@@ -1,22 +1,11 @@
 /// <reference lib="dom" />
 import React, { useState, useCallback, useEffect } from 'react';
-import { EvaluationForm } from './components/EvaluationForm';
-import { ScoreDisplay } from './components/ScoreDisplay';
-import { FeedbackSection } from './components/FeedbackSection';
-import { DashboardView } from './components/DashboardView';
+// Remove unused imports and only keep what's necessary for types and logic
 import { StudentEvaluation, ScorePoints, GroundingMetadata, SavedEvaluation } from './types';
-import { RUBRIC_DATA, GRADING_CONSTANTS } from './constants';
+import { RUBRIC_DATA } from './constants';
 import { calculateTotalScore, calculateFinalGrade, areAllIndicatorsScored } from './services/gradingService';
 import { generateAIFeedback } from './services/geminiService';
-import { downloadReportAsPDF } from './services/pdfService';
 import { saveEvaluationToFirestore, getAllEvaluationsFromFirestore, clearAllEvaluationsFromFirestore } from './services/evaluationService';
-
-import CalculateIcon from './components/icons/CalculateIcon';
-import SparklesIcon from './components/icons/SparklesIcon';
-import DownloadIcon from './components/icons/DownloadIcon';
-import SaveIcon from './components/icons/SaveIcon';
-import DashboardIcon from './components/icons/DashboardIcon';
-import ArrowLeftIcon from './components/icons/ArrowLeftIcon';
 
 type ViewMode = 'form' | 'dashboard';
 
@@ -63,14 +52,14 @@ export const App = () => {
 
   const handleStudentNameChange = useCallback((name: string) => {
     setStudentName(name);
+  const handleScoreChange = useCallback((indicatorId: string, score: ScorePoints) => {
+    setScores((prevScores: StudentEvaluation) => ({ ...prevScores, [indicatorId]: score }));
+    setFinalGrade(null);
+    setAiFeedback(null);
+    setGroundingMetadata(undefined);
     setErrorMessage(null);
     setSuccessMessage(null);
   }, []);
-
-  const handleCourseChange = useCallback((c: string) => {
-    setCourse(c);
-    setErrorMessage(null);
-    setSuccessMessage(null);
   }, []);
 
   const displaySuccessMessage = (message: string) => {
