@@ -1,12 +1,13 @@
 
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { StudentEvaluation, RubricItem, ScorePoints, GroundingMetadata } from '../../types';
+import { StudentEvaluation, RubricItem, ScorePoints, GroundingMetadata } from '../types';
 import { RUBRIC_DATA } from '../constants';
 
-const API_KEY = import.meta.env.VITE_API_KEY;
+const API_KEY = process.env.API_KEY;
 
 if (!API_KEY) {
-  throw new Error("La clave API de Gemini no está configurada.");
+  console.error("API_KEY environment variable is not set.");
+  // Potentially throw an error or handle this state in the UI
 }
 
 const ai = new GoogleGenAI({ apiKey: API_KEY || "MISSING_API_KEY" }); // Fallback to prevent crash if key is missing during init

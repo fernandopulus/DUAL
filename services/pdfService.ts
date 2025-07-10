@@ -1,5 +1,5 @@
 
-import { StudentEvaluation, RubricItem, GroundingMetadata } from '../../types'; // Updated import
+import { StudentEvaluation, RubricItem, GroundingMetadata } from '../types'; // Updated import
 
 // This tells TypeScript that html2canvas is a global variable, loaded via CDN.
 // This is appropriate because html2canvas is used directly as `html2canvas(...)`.
