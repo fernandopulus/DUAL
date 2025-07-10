@@ -11,7 +11,7 @@ import {
   where,
   Timestamp
 } from 'firebase/firestore';
-import { db } from './firebase'; // SOLO importa db, no inicialices aquí
+import { db } from '../src/firebase'; // SOLO importa db, no inicialices aquí
 import { StudentEvaluation } from '../types';
 
 // Tipos para las evaluaciones
