@@ -6,7 +6,7 @@
     "indexes": "firestore.indexes.json"
   },
   "hosting": {
-    "site": "dualgrade",
+    "site": "dualgrade-f7285",
     "public": "dist",
     "ignore": [
       "firebase.json",

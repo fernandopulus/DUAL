@@ -34,6 +34,7 @@ export async function saveEvaluation(
   feedbackText: string = '',
   evaluatorName: string = ''
 ): Promise<string> {
+  console.log('Intentando guardar evaluación:', studentName, scores);
   try {
     const totalScore = Object.values(scores).reduce((sum, score) => sum + (score || 0), 0);
     const maxScore = Object.keys(scores).length * 4; // Ajusta según tu rúbrica
