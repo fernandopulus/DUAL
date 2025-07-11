@@ -88,7 +88,7 @@ export const App = () => {
 
   const displaySuccessMessage = (message: string) => {
     setSuccessMessage(message);
-    setTimeout(() => setSuccessMessage(null), 3000); // Hide after 3 seconds
+    setTimeout(() => setSuccessMessage(null), 3000);
   };
 
   const validateForm = (checkFeedbackAndGrade = false): boolean => {
@@ -164,6 +164,7 @@ export const App = () => {
     }
   }, [studentName, scores, finalGrade, course]);
 
+  // ---------- GUARDADO EN FIRESTORE CORRECTO (todos los campos) ----------
   const handleSaveEvaluation = useCallback(async () => {
     if (!validateForm(true) || finalGrade === null || !aiFeedback) {
       setErrorMessage("Complete la evaluación, calcule nota y genere retroalimentación antes de guardar.");
@@ -172,18 +173,20 @@ export const App = () => {
     try {
       await saveEvaluationToFirestore(
         studentName,
+        course,
         scores,
+        finalGrade,
         aiFeedback,
-        "" // puedes pasar evaluatorName aquí si lo tienes
+        "" // Puedes reemplazar por evaluatorName si quieres
       );
       displaySuccessMessage(`Evaluación para ${studentName} guardada.`);
-      refreshEvaluations(); // Recarga evaluaciones desde Firestore
-      // Optionally, reset the form after saving:
-      // resetFormState();
+      refreshEvaluations();
+      // resetFormState(); // Si quieres limpiar el formulario luego de guardar
     } catch (err) {
       setErrorMessage("Error al guardar la evaluación.");
     }
-  }, [studentName, scores, aiFeedback, finalGrade, refreshEvaluations]);
+  }, [studentName, course, scores, finalGrade, aiFeedback, refreshEvaluations]);
+  // ---------------------------------------------------------------------
 
   const handleDownloadReport = useCallback(async () => {
     if (!validateForm(true) || finalGrade === null || !aiFeedback) {
@@ -205,8 +208,8 @@ export const App = () => {
       });
       displaySuccessMessage("Informe PDF descargado.");
     } catch (error) {
-        console.error("Error downloading PDF:", error);
-        setErrorMessage("Error al descargar el informe PDF.");
+      console.error("Error downloading PDF:", error);
+      setErrorMessage("Error al descargar el informe PDF.");
     }
   }, [studentName, course, scores, totalScore, finalGrade, aiFeedback, groundingMetadata]);
 
@@ -366,4 +369,4 @@ export const App = () => {
       <div id="pdf-report-content" style={{ position: 'absolute', left: '-9999px', width: '0px', height: '0px', overflow: 'hidden' }}></div>
     </div>
   );
-};
+}

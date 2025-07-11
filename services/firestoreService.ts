@@ -1,10 +1,9 @@
-// services/firestoreService.ts
-import { 
-  collection, 
-  addDoc, 
-  getDocs, 
-  doc, 
-  updateDoc, 
+import {
+  collection,
+  addDoc,
+  getDocs,
+  doc,
+  updateDoc,
   deleteDoc,
   query,
   orderBy,
@@ -14,12 +13,14 @@ import {
 import { db } from '../src/firebase'; // SOLO importa db, no inicialices aquí
 import { StudentEvaluation } from '../types';
 
-// Tipos para las evaluaciones
+// Asegúrate de tener estos campos en tu tipo:
 export interface EvaluationRecord {
   id?: string;
   studentName: string;
+  course: string;
   scores: StudentEvaluation;
-  feedbackText?: string;
+  finalGrade: number;
+  feedbackText: string;
   totalScore: number;
   percentage: number;
   createdAt: Timestamp;
@@ -27,22 +28,25 @@ export interface EvaluationRecord {
   evaluatorName?: string;
 }
 
-// Guardar una nueva evaluación
+// GUARDAR EVALUACIÓN COMPLETA
 export async function saveEvaluation(
   studentName: string,
+  course: string,
   scores: StudentEvaluation,
-  feedbackText: string = '',
+  finalGrade: number,
+  feedbackText: string,
   evaluatorName: string = ''
 ): Promise<string> {
-  console.log('Intentando guardar evaluación:', studentName, scores);
   try {
     const totalScore = Object.values(scores).reduce((sum, score) => sum + (score || 0), 0);
-    const maxScore = Object.keys(scores).length * 4; // Ajusta según tu rúbrica
+    const maxScore = Object.keys(scores).length * 4; // Ajusta si tienes otra lógica
     const percentage = Math.round((totalScore / maxScore) * 100);
 
     const evaluationData: Omit<EvaluationRecord, 'id'> = {
       studentName,
+      course,
       scores,
+      finalGrade,
       feedbackText,
       totalScore,
       percentage,
@@ -60,7 +64,7 @@ export async function saveEvaluation(
   }
 }
 
-// Obtener todas las evaluaciones
+// LEER TODAS LAS EVALUACIONES
 export async function getAllEvaluations(): Promise<EvaluationRecord[]> {
   try {
     const q = query(
@@ -70,10 +74,20 @@ export async function getAllEvaluations(): Promise<EvaluationRecord[]> {
     const querySnapshot = await getDocs(q);
     const evaluations: EvaluationRecord[] = [];
     querySnapshot.forEach((docItem) => {
+      const data = docItem.data() as any;
       evaluations.push({
         id: docItem.id,
-        ...docItem.data()
-      } as EvaluationRecord);
+        studentName: data.studentName,
+        course: data.course,
+        scores: data.scores,
+        finalGrade: typeof data.finalGrade === 'number' ? data.finalGrade : Number(data.finalGrade),
+        feedbackText: data.feedbackText,
+        totalScore: typeof data.totalScore === 'number' ? data.totalScore : Number(data.totalScore),
+        percentage: typeof data.percentage === 'number' ? data.percentage : Number(data.percentage),
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+        evaluatorName: data.evaluatorName ?? ''
+      });
     });
     return evaluations;
   } catch (error) {
@@ -82,7 +96,7 @@ export async function getAllEvaluations(): Promise<EvaluationRecord[]> {
   }
 }
 
-// Obtener evaluaciones por estudiante
+// LEER POR ESTUDIANTE
 export async function getEvaluationsByStudent(studentName: string): Promise<EvaluationRecord[]> {
   try {
     const q = query(
@@ -93,10 +107,20 @@ export async function getEvaluationsByStudent(studentName: string): Promise<Eval
     const querySnapshot = await getDocs(q);
     const evaluations: EvaluationRecord[] = [];
     querySnapshot.forEach((docItem) => {
+      const data = docItem.data() as any;
       evaluations.push({
         id: docItem.id,
-        ...docItem.data()
-      } as EvaluationRecord);
+        studentName: data.studentName,
+        course: data.course,
+        scores: data.scores,
+        finalGrade: typeof data.finalGrade === 'number' ? data.finalGrade : Number(data.finalGrade),
+        feedbackText: data.feedbackText,
+        totalScore: typeof data.totalScore === 'number' ? data.totalScore : Number(data.totalScore),
+        percentage: typeof data.percentage === 'number' ? data.percentage : Number(data.percentage),
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+        evaluatorName: data.evaluatorName ?? ''
+      });
     });
     return evaluations;
   } catch (error) {
@@ -105,23 +129,15 @@ export async function getEvaluationsByStudent(studentName: string): Promise<Eval
   }
 }
 
-// Actualizar una evaluación existente
+// ACTUALIZAR EVALUACIÓN
 export async function updateEvaluation(
   evaluationId: string,
-  scores: StudentEvaluation,
-  feedbackText: string = ''
+  updateData: Partial<Omit<EvaluationRecord, 'id'>>
 ): Promise<void> {
   try {
-    const totalScore = Object.values(scores).reduce((sum, score) => sum + (score || 0), 0);
-    const maxScore = Object.keys(scores).length * 4;
-    const percentage = Math.round((totalScore / maxScore) * 100);
-
     const evaluationRef = doc(db, 'evaluations', evaluationId);
     await updateDoc(evaluationRef, {
-      scores,
-      feedbackText,
-      totalScore,
-      percentage,
+      ...updateData,
       updatedAt: Timestamp.now()
     });
     console.log('Evaluación actualizada:', evaluationId);
@@ -131,7 +147,7 @@ export async function updateEvaluation(
   }
 }
 
-// Eliminar una evaluación
+// ELIMINAR UNA EVALUACIÓN
 export async function deleteEvaluation(evaluationId: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'evaluations', evaluationId));
@@ -142,7 +158,7 @@ export async function deleteEvaluation(evaluationId: string): Promise<void> {
   }
 }
 
-// BORRAR TODAS LAS EVALUACIONES (agregado aquí)
+// ELIMINAR TODAS LAS EVALUACIONES
 export async function clearAllEvaluations(): Promise<void> {
   try {
     const evaluations = await getAllEvaluations();
@@ -157,11 +173,11 @@ export async function clearAllEvaluations(): Promise<void> {
   }
 }
 
-// Estadísticas generales
+// ESTADÍSTICAS GENERALES
 export async function getEvaluationStats(): Promise<{
   totalEvaluations: number;
   averageScore: number;
-  topStudents: Array<{name: string, score: number}>;
+  topStudents: Array<{ name: string, score: number }>;
 }> {
   try {
     const evaluations = await getAllEvaluations();
@@ -175,7 +191,6 @@ export async function getEvaluationStats(): Promise<{
 
     const totalEvaluations = evaluations.length;
     const averageScore = evaluations.reduce((sum, record) => sum + record.percentage, 0) / totalEvaluations;
-    // Obtener los mejores estudiantes (últimas evaluaciones por estudiante)
     const studentScores = new Map<string, number>();
     evaluations.forEach(record => {
       if (
@@ -189,6 +204,7 @@ export async function getEvaluationStats(): Promise<{
       .map(([name, score]) => ({ name, score }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 5);
+
     return {
       totalEvaluations,
       averageScore: Math.round(averageScore),
